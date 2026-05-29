@@ -29,21 +29,37 @@ consistency over per-project drift).
 
 - **Java / Kotlin ecosystem only.** jk's v1 scope is JVM; aliases for
   other ecosystems will land when (and if) jk grows to them.
+
 - **One canonical short name per artifact.** If a project already uses
   a different short name internally, override it locally with
   `[aliases]` in `jk.toml` or `~/.jk/aliases.toml`.
+
 - **First-PR wins on collisions.** If `foo` is the natural short name
   for both `com.acme:foo` and `org.example:foo`, whoever PRs first
   claims the name. The other artifact must use an explicit `group =`
   in jk.toml.
+
 - **No version field.** The registry is a name-to-coordinate index,
   not a curated catalog. Version pinning is the user's call. The
   validator rejects entries with three colons.
+
 - **Prefer the artifactId when unambiguous.** `picocli`, `guava`,
   `tomlj` — short, known, unambiguous artifacts get their natural
   name. Don't invent abbreviations that no one types.
+
 - **Spring Boot starters keep the prefix.** `spring-boot-starter-web`,
   not `sbsw`. The prefix is load-bearing for grep and muscle memory.
+
+- **Split aliases by major version when the Maven *coordinate* changes
+  — not when only the version selector does.** Jackson 2 → 3 moved
+  from `com.fasterxml.jackson.*` to `tools.jackson.*`: that's a
+  coord change, so the registry carries both `jackson2-*` and
+  `jackson3-*` and intentionally has **no unprefixed** `jackson-*`.
+  Adopting the unprefixed name should never be a silent major bump —
+  if a future Jackson 4 ships, it gets `jackson4-*`, and the existing
+  aliases keep meaning what they mean. Within-coord bumps (Spring
+  Boot 2 vs 3 — same GAV, different version selector) keep a single
+  alias; the user's version field already disambiguates.
 
 ## Contributing
 

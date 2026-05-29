@@ -1,0 +1,70 @@
+name: Validate registry
+
+on:
+  pull_request:
+    paths:
+      - "aliases.toml"
+  push:
+    branches: [main]
+    paths:
+      - "aliases.toml"
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python (for the TOML validator)
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Validate aliases.toml
+        run: |
+          python3 - <<'EOF'
+          import sys
+          import tomllib
+
+          with open("aliases.toml", "rb") as f:
+              data = tomllib.load(f)
+
+          if "aliases" not in data:
+              print("ERROR: aliases.toml must contain an [aliases] table", file=sys.stderr)
+              sys.exit(1)
+
+          aliases = data["aliases"]
+          errors = []
+          seen = {}
+
+          for name, value in aliases.items():
+              if not isinstance(value, str):
+                  errors.append(f"{name!r}: value must be a string, got {type(value).__name__}")
+                  continue
+
+              parts = value.split(":")
+              if len(parts) != 2:
+                  errors.append(
+                      f"{name!r}: expected 'group:artifact' (exactly one colon), got {value!r}"
+                  )
+                  continue
+
+              group, artifact = parts
+              if not group or not artifact:
+                  errors.append(f"{name!r}: group and artifact must both be non-empty, got {value!r}")
+                  continue
+
+              if value in seen:
+                  errors.append(
+                      f"{name!r} duplicates the coordinate already claimed by {seen[value]!r} → {value}"
+                  )
+              else:
+                  seen[value] = name
+
+          if errors:
+              for e in errors:
+                  print(f"ERROR: {e}", file=sys.stderr)
+              sys.exit(1)
+
+          print(f"OK — {len(aliases)} aliases validated.")
+          EOF
