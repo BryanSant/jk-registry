@@ -2,12 +2,8 @@ name: Validate registry
 
 on:
   pull_request:
-    paths:
-      - "aliases.toml"
   push:
     branches: [main]
-    paths:
-      - "aliases.toml"
 
 jobs:
   validate:
